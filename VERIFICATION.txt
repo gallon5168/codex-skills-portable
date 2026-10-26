@@ -1,0 +1,72 @@
+Codex Skills Portable — Verification Record
+Generated: 2026-10-27 (Asia/Shanghai)
+Branch: main
+
+CHANGED BRANCH / FIELD
+- Branch: main
+- MODIFIED_FILE: config/install-layout.json
+- Field: mode changed from "source-only" to "portable"
+- Field: installTarget changed from null to "${CODEX_HOME}/skills/.portable-export"
+- Alias roots changed from [] to ["${HOME}/.agents/skills", "${CODEX_HOME}/skills"]
+
+FOUR ARTIFACTS
+1. MODIFIED_FILE: config/install-layout.json
+2. DIFF_FILE: manifest/INSTALL_LAYOUT.diff
+3. VERIFICATION: VERIFICATION.txt
+4. ROLLBACK: ROLLBACK.sh
+
+ORIGINAL HASH PRESERVED
+- BASELINE file: config/install-layout.source.json
+- SHA-256: 93c5f1916fba00c970e12c2f8071eb3ab439d95bafe6bc8d87efcc31eaef40ae
+- Portable source manifest preserves original SHA-256 for every exported source file.
+
+ARTIFACT HASHES
+- config/install-layout.json: 18cccfa574425163553a4f74c8f5d5df5623c6a1b218fc011bd2a5179b7fbfdf
+- manifest/INSTALL_LAYOUT.diff: a84d56b5c7b5258b6980e27bf1073bf802a19af310645159d981d4eb0404e695
+- ROLLBACK.sh: 70245d61f6d30830c60325763ed03ed796cdda0ab18d50fa7c03b65352ec5382
+
+BASELINE
+Command:
+  python tests\verify_package.py --manifest manifest\source-skills-manifest.json
+Input:
+  manifest/source-skills-manifest.json (mode=source-only; no portable repo_path fields)
+Literal output/result:
+  BASELINE FAIL mode=source-only missing portable repo_path fields
+Exit status:
+  2
+
+MODIFIED
+Command:
+  python tests\verify_package.py
+Input:
+  manifest/portable-skills-manifest.json and all 13,509 exported files
+Literal output/result:
+  MODIFIED PASS files=13509 hashes=ok sanitized=29
+Exit status:
+  0
+
+ROLLBACK
+Command:
+  powershell -NoProfile -ExecutionPolicy Bypass -File tests\integration.ps1
+Input:
+  Fresh ${TEST_HOME}; one pre-existing alias directory containing sentinel.txt="before-install"; install.ps1 -Force; rollback.ps1
+Literal output/result:
+  INSTALL PASS definitions=2180 aliases=4161 skipped=0 state=${TEST_HOME}\.codex-skills-portable-state.json
+  ROLLBACK PASS restored=1 removedLinks=4161 installRootRemoved=True
+  ROLLBACK VERIFY PASS sentinel=before-install installRootExists=False
+Exit status:
+  0
+
+RESTORED BEHAVIOR / STATUS
+- The pre-existing alias directory was restored.
+- sentinel.txt again contained the exact value "before-install".
+- The portable install root no longer existed.
+- All 4,161 junctions created by the test install were removed.
+
+PUBLICATION SANITIZATION CHECK
+- Absolute local user-profile path hits: 0
+- Account email hits: 0
+- GitHub-token-shaped hits: 0
+- AWS-access-key-shaped hits: 0
+- PEM private-key headers: 0
+- OpenAI-key-shaped hits: 0

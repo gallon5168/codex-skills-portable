@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "rikune": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "-e",
+        "API_ENABLED=false",
+        "-e",
+        "NODE_ENV=production",
+        "-e",
+        "PYTHONUNBUFFERED=1",
+        "rikune-analyzer",
+        "node",
+        "dist/index.js"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "PYTHONUNBUFFERED": "1",
+        "WORKSPACE_ROOT": "/app/workspaces",
+        "DB_PATH": "/app/data/database.db",
+        "CACHE_ROOT": "/app/cache",
+        "GHIDRA_PROJECT_ROOT": "/ghidra-projects",
+        "GHIDRA_LOG_ROOT": "/ghidra-logs"
+      },
+      "timeout": 300000
+    }
+  }
+}

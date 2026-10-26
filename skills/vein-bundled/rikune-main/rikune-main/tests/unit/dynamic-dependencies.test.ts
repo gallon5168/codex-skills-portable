@@ -1,0 +1,185 @@
+import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals'
+import fs from 'fs/promises'
+import path from 'path'
+import os from 'os'
+import { WorkspaceManager } from '../../src/workspace-manager.js'
+import { DatabaseManager } from '../../src/database.js'
+import { createDynamicDependenciesHandler } from '../../src/plugins/dynamic/tools/dynamic-dependencies.js'
+
+describe('dynamic.dependencies tool', () => {
+  let tempDir: string
+  let workspaceManager: WorkspaceManager
+  let database: DatabaseManager
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dynamic-dependencies-test-'))
+    workspaceManager = new WorkspaceManager(path.join(tempDir, 'workspaces'))
+    database = new DatabaseManager(path.join(tempDir, 'test.db'))
+  })
+
+  afterEach(async () => {
+    database.close()
+    await fs.rm(tempDir, { recursive: true, force: true })
+  })
+
+  test('should report speakeasy emulator metadata and actionable recommendations', async () => {
+    const handler = createDynamicDependenciesHandler(workspaceManager, database)
+    const result = await handler({})
+
+    expect(result.ok).toBe(true)
+    const data = result.data as {
+      status: string
+      components: {
+        speakeasy?: {
+          available?: boolean
+          distribution?: string | null
+          version?: string | null
+          api_available?: boolean
+          warnings?: string[]
+          legacy_distribution_summary?: string
+        }
+      }
+      recommendations: string[]
+      setup_actions: Array<{ id: string; kind: string; command?: string | null }>
+      required_user_inputs: Array<unknown>
+    }
+
+    expect(['ready', 'partial', 'bootstrap_required']).toContain(data.status)
+    expect(Array.isArray(data.recommendations)).toBe(true)
+    expect(Array.isArray(data.setup_actions)).toBe(true)
+    expect(Array.isArray(data.required_user_inputs)).toBe(true)
+
+    const speakeasy = data.components.speakeasy || {}
+    if (speakeasy.available) {
+      expect(speakeasy.distribution).toBe('speakeasy-emulator')
+      expect(typeof speakeasy.version).toBe('string')
+      expect(speakeasy.api_available).toBe(true)
+      expect(data.recommendations.join(' ')).not.toContain('pip install speakeasy ')
+      expect(data.recommendations.join(' ')).not.toContain('pip install speakeasy\n')
+    } else {
+      expect(data.recommendations.join(' ')).toContain('speakeasy-emulator')
+    }
+
+    if (
+      (speakeasy.legacy_distribution_summary || '')
+        .toLowerCase()
+        .includes('metrics aggregation server')
+    ) {
+      expect(data.recommendations.join(' ')).toContain('pip uninstall speakeasy')
+    }
+  })
+
+  test('should degrade to bootstrap_required when the worker probe fails', async () => {
+    const handler = createDynamicDependenciesHandler(workspaceManager, database, {
+      callWorker: async () => {
+        throw new Error('Python worker exited with code 1')
+      },
+    })
+
+    const result = await handler({})
+
+    expect(result.ok).toBe(true)
+    const data = result.data as {
+      status: string
+      components: {
+        worker?: {
+          available?: boolean
+          error?: string
+        }
+      }
+      recommendations: string[]
+      setup_actions: Array<{ id: string; command?: string | null }>
+    }
+
+    expect(data.status).toBe('bootstrap_required')
+    expect(data.components.worker?.available).toBe(false)
+    expect(data.components.worker?.error).toContain('Python worker exited with code 1')
+    expect(data.recommendations.join(' ')).toContain(
+      'pip install --require-hashes -r requirements.lock.txt'
+    )
+    expect(data.recommendations.join(' ')).toContain(
+      'pip install --require-hashes -r workers/requirements-dynamic.lock.txt'
+    )
+    expect(data.setup_actions.map((item) => item.id)).toContain('install_python_requirements')
+    expect(data.setup_actions.map((item) => item.id)).toContain('install_speakeasy_emulator')
+  })
+
+  test('should merge extended Linux dynamic backends into the response', async () => {
+    const handler = createDynamicDependenciesHandler(workspaceManager, database, {
+      callWorker: async () => ({
+        job_id: 'test-job',
+        ok: true,
+        warnings: [],
+        errors: [],
+        data: {
+          status: 'partial',
+          available_components: ['speakeasy'],
+          components: {
+            speakeasy: { available: true, version: '1.0.0' },
+            frida: { available: false, version: null },
+            psutil: { available: true, version: '7.2.2' },
+          },
+          recommendations: [],
+          checked_at: new Date().toISOString(),
+        },
+        artifacts: [],
+        metrics: { elapsed_ms: 1, tool: 'dynamic.dependencies' },
+      }),
+    })
+
+    const result = await handler({})
+    expect(result.ok).toBe(true)
+    const data = result.data as any
+    expect(data.components).toHaveProperty('qiling')
+    expect(data.components).toHaveProperty('angr')
+    expect(data.components).toHaveProperty('panda')
+    expect(data.components).toHaveProperty('wine')
+    expect(data.components).toHaveProperty('winedbg')
+    expect(data.components).toHaveProperty('frida_cli')
+    expect(Array.isArray(data.required_user_inputs)).toBe(true)
+  })
+
+  test('forwards cancellation to the worker and waits for worker teardown', async () => {
+    let resolveStarted!: (signal: AbortSignal) => void
+    const started = new Promise<AbortSignal>((resolve) => {
+      resolveStarted = resolve
+    })
+    let resolveTeardown!: () => void
+    const teardown = new Promise<void>((resolve) => {
+      resolveTeardown = resolve
+    })
+    const callWorker = jest.fn(async (_request, signal?: AbortSignal) => {
+      if (!signal) throw new Error('missing AbortSignal')
+      resolveStarted(signal)
+      await new Promise<void>((resolve) => {
+        signal.addEventListener('abort', () => resolve(), { once: true })
+      })
+      await teardown
+      return {
+        job_id: 'cancelled-worker',
+        ok: true,
+        warnings: [],
+        errors: [],
+        data: {},
+        artifacts: [],
+        metrics: {},
+      }
+    })
+    const handler = createDynamicDependenciesHandler(workspaceManager, database, { callWorker })
+    const controller = new AbortController()
+    let settled = false
+    const running = handler({}, controller.signal).finally(() => {
+      settled = true
+    })
+
+    const receivedSignal = await started
+    controller.abort(new Error('cancel dependency probe'))
+    await Promise.resolve()
+
+    expect(receivedSignal).toBe(controller.signal)
+    expect(settled).toBe(false)
+
+    resolveTeardown()
+    await expect(running).rejects.toMatchObject({ name: 'AbortError' })
+  })
+})

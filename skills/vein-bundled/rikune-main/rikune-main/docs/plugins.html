@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plugins — Rikune</title>
+<meta name="description" content="Plugin SDK, built-in plugins, and configuration for Rikune MCP Server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow--1"></div>
+<div class="bg-glow bg-glow--2"></div>
+<canvas id="particles"></canvas>
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="index.html" class="nav__logo"><span class="nav__logo-icon">R</span> Rikune</a>
+    <ul class="nav__links" id="navLinks">
+      <li><a href="index.html#features" data-lang-en>Features</a><a href="index.html#features" data-lang-zh>功能特性</a></li>
+      <li><a href="api-reference.html">API</a></li>
+      <li><a href="usage.html" data-lang-en>Usage</a><a href="usage.html" data-lang-zh>使用指南</a></li>
+      <li><a href="local-setup.html"><span data-lang-en>Local</span><span data-lang-zh>本地</span></a></li>
+      <li><a href="docker.html">Docker</a></li>
+      <li><a href="examples.html" data-lang-en>Examples</a><a href="examples.html" data-lang-zh>示例</a></li>
+      <li><a href="plugins.html" class="active" data-lang-en>Plugins</a><a href="plugins.html" class="active" data-lang-zh>插件</a></li>
+      <li><a href="anti-obfuscation.html" data-lang-en>Anti-Obf</a><a href="anti-obfuscation.html" data-lang-zh>反混淆</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+    </ul>
+    <div class="nav__right">
+      <button class="lang-toggle" id="lang-toggle">中文</button>
+      <a href="https://github.com/Last-emo-boy/rikune" class="nav__cta" target="_blank" rel="noopener">GitHub →</a>
+    </div>
+    <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="page-hero">
+  <div class="container">
+    <div class="breadcrumb"><a href="index.html">Rikune</a> / <span data-lang-en>Plugins</span><span data-lang-zh>插件</span></div>
+    <h1><span data-lang-en>Plugin System</span><span data-lang-zh>插件系统</span></h1>
+    <p>
+      <span data-lang-en>Extend Rikune with built-in or custom plugins — each plugin registers MCP tools with the server.</span>
+      <span data-lang-zh>通过内置或自定义插件扩展 Rikune — 每个插件都向服务器注册 MCP 工具。</span>
+    </p>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="doc-layout">
+  <aside class="doc-sidebar">
+    <div class="doc-sidebar__title"><span data-lang-en>On this page</span><span data-lang-zh>本页目录</span></div>
+    <a href="#overview">Overview</a>
+    <a href="#built-in">Built-in Plugins</a>
+    <a href="#bundled"><span data-lang-en>Bundled Plugins</span><span data-lang-zh>随附插件</span></a>
+    <a href="#sdk">Plugin SDK</a>
+    <a href="#config">Configuration</a>
+    <a href="#introspection">Introspection</a>
+    <a href="#lifecycle">Lifecycle</a>
+  </aside>
+
+  <div class="doc-main">
+
+    <!-- Overview -->
+    <section id="overview" class="reveal">
+      <h2><span data-lang-en>Overview</span><span data-lang-zh>概述</span></h2>
+      <p>
+        <span data-lang-en>Rikune's plugin system allows modular registration of MCP tools. Each plugin exports a <code>register()</code> function that receives the server context and registers tools, hooks, and lifecycle callbacks.</span>
+        <span data-lang-zh>Rikune 的插件系统允许模块化注册 MCP 工具。每个插件导出一个 <code>register()</code> 函数，接收服务器上下文并注册工具、钩子和生命周期回调。</span>
+      </p>
+    </section>
+
+    <!-- Built-in Plugins -->
+    <section id="built-in" class="reveal">
+      <h2><span data-lang-en>Built-in Plugins</span><span data-lang-zh>内置插件</span></h2>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th><span data-lang-en>Plugin</span><span data-lang-zh>插件</span></th>
+            <th><span data-lang-en>Tools</span><span data-lang-zh>工具数</span></th>
+            <th><span data-lang-en>Description</span><span data-lang-zh>描述</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>pe-analysis</code></td>
+            <td>12</td>
+            <td><span data-lang-en>Core PE parsing — headers, imports, exports, sections, resources</span><span data-lang-zh>核心 PE 解析 — 头信息、导入、导出、节、资源</span></td>
+          </tr>
+          <tr>
+            <td><code>ghidra</code></td>
+            <td>8</td>
+            <td><span data-lang-en>Ghidra decompilation, function listing, CFG, xrefs</span><span data-lang-zh>Ghidra 反编译、函数列表、CFG、交叉引用</span></td>
+          </tr>
+          <tr>
+            <td><code>detection</code></td>
+            <td>6</td>
+            <td><span data-lang-en>capa, DIE, YARA scanning, compiler/packer identification</span><span data-lang-zh>capa、DIE、YARA 扫描、编译器/加壳识别</span></td>
+          </tr>
+          <tr>
+            <td><code>dynamic</code></td>
+            <td>24</td>
+            <td><span data-lang-en>Runtime status, runtime toolkit inventory, deep dynamic planning, CDB, ProcDump, telemetry, network lab, managed runtime, and GUI handoff planning, runtime persona planning, behavior diffing, Hyper-V control, Sandbox/Hyper-V behavior capture, Frida, Qiling, angr, Wine, PANDA integration</span><span data-lang-zh>运行时状态、runtime 工具库存、深度动态计划、CDB、ProcDump、telemetry、网络实验、托管运行时和 GUI handoff 规划、runtime persona 规划、行为差异对比、Hyper-V 控制、Sandbox/Hyper-V 行为捕获、Frida、Qiling、angr、Wine、PANDA 集成</span></td>
+          </tr>
+          <tr>
+            <td><code>intel</code></td>
+            <td>7</td>
+            <td><span data-lang-en>C2, IOC, family classification, YARA/Sigma generation</span><span data-lang-zh>C2、IOC、家族分类、YARA/Sigma 生成</span></td>
+          </tr>
+          <tr>
+            <td><code>workflow</code></td>
+            <td>6</td>
+            <td><span data-lang-en>Staged pipeline orchestration, job queue management</span><span data-lang-zh>分阶段流水线编排、作业队列管理</span></td>
+          </tr>
+          <tr>
+            <td><code>dotnet</code></td>
+            <td>5</td>
+            <td><span data-lang-en>.NET metadata, IL disassembly, type extraction</span><span data-lang-zh>.NET 元数据、IL 反汇编、类型提取</span></td>
+          </tr>
+          <tr>
+            <td><code>llm-review</code></td>
+            <td>4</td>
+            <td><span data-lang-en>LLM-assisted function naming, explanation, reconstruction</span><span data-lang-zh>LLM 辅助函数命名、解释、重建</span></td>
+          </tr>
+          <tr>
+            <td><code>docker-backend</code></td>
+            <td>15</td>
+            <td><span data-lang-en>Docker-specific backend tools (Rizin, RetDec, etc.)</span><span data-lang-zh>Docker 专用后端工具（Rizin、RetDec 等）</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Bundled Plugins -->
+    <section id="bundled" class="reveal">
+      <h2><span data-lang-en>Bundled Plugins</span><span data-lang-zh>随附插件</span></h2>
+      <p>
+        <span data-lang-en>These 117 plugins ship with the repository under <code>src/plugins/</code>. They are auto-discovered at startup; the final MCP tool surface depends on enabled plugins, progressive discovery, and runtime readiness. The authoritative inventory is maintained in <code>docs/PLUGINS.md</code>.</span>
+        <span data-lang-zh>这 117 个插件随仓库一起发布在 <code>src/plugins/</code> 下。它们在启动时自动发现；最终 MCP 工具面取决于启用插件、渐进式发现和 runtime readiness。权威清单维护在 <code>docs/PLUGINS.md</code>。</span>
+      </p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th><span data-lang-en>Plugin</span><span data-lang-zh>插件</span></th>
+            <th><span data-lang-en>Tools</span><span data-lang-zh>工具数</span></th>
+            <th><span data-lang-en>Tool Names</span><span data-lang-zh>工具名</span></th>
+            <th><span data-lang-en>Dependencies</span><span data-lang-zh>依赖</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>android</code></td>
+            <td>4</td>
+            <td><code>apk.structure.analyze</code>, <code>dex.decompile</code>, <code>dex.classes.list</code>, <code>apk.packer.detect</code></td>
+            <td><code>JADX_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>angr</code></td>
+            <td>1</td>
+            <td><code>angr.analyze</code></td>
+            <td><code>ANGR_PYTHON</code></td>
+          </tr>
+          <tr>
+            <td><code>api-hash</code></td>
+            <td>3</td>
+            <td><code>hash.resolve</code>, <code>hash.identify</code>, <code>hash.resolver.plan</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>apk-smali</code></td>
+            <td>3</td>
+            <td><code>apk.disassemble</code>, <code>apk.manifest.parse</code>, <code>apk.resources.decode</code></td>
+            <td><code>JADX_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>batch</code></td>
+            <td>3</td>
+            <td><code>batch.submit</code>, <code>batch.status</code>, <code>batch.results</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>behavior-first</code></td>
+            <td>3</td>
+            <td><code>behavior.capture</code>, <code>behavior.ioc</code>, <code>behavior.network</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>FRIDA_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>binary-diff</code></td>
+            <td>2</td>
+            <td><code>binary.diff</code>, <code>binary.diff.summary</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>binary-hardening</code></td>
+            <td>1</td>
+            <td><code>binary.hardening.inventory</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>capstone</code></td>
+            <td>2</td>
+            <td><code>disasm.quick</code>, <code>shellcode.disasm</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>code-analysis</code></td>
+            <td>19</td>
+            <td><code>code.functions.list</code>, <code>code.functions.rank</code>, <code>code.functions.smart.recover</code>, <code>code.functions.define</code>, <code>code.functions.search</code>, <code>code.xrefs.analyze</code>, <code>code.function.decompile</code>, <code>code.function.disassemble</code>, <code>code.function.cfg</code>, <code>code.functions.reconstruct</code>, <code>code.function.rename.prepare</code>, <code>code.function.rename.apply</code>, <code>code.function.explain.prepare</code>, <code>code.function.explain.apply</code>, <code>code.module.review.prepare</code>, <code>code.module.review.apply</code>, <code>code.reconstruct.export</code>, <code>dotnet.reconstruct.export</code>, <code>code.reconstruct.plan</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>crackme</code></td>
+            <td>4</td>
+            <td><code>crackme.locate_validation</code>, <code>symbolic.explore</code>, <code>patch.generate</code>, <code>keygen.verify</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>ANGR_PYTHON</code></td>
+          </tr>
+          <tr>
+            <td><code>cross-module</code></td>
+            <td>3</td>
+            <td><code>cross_binary.compare</code>, <code>call_graph.cross_module</code>, <code>dll.dependency_tree</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>debug-session</code></td>
+            <td>9</td>
+            <td><code>debug.session.start</code>, <code>debug.session.breakpoint</code>, <code>debug.session.continue</code>, <code>debug.session.step</code>, <code>debug.session.inspect</code>, <code>debug.session.end</code>, <code>debug.session.smart_breakpoint</code>, <code>debug.session.snapshot</code>, <code>debug.session.watch</code></td>
+            <td>GDB</td>
+          </tr>
+          <tr>
+            <td><code>deep-unpack</code></td>
+            <td>3</td>
+            <td><code>deep.unpack.pipeline</code>, <code>deep.unpack.pe_reconstruct</code>, <code>deep.unpack.dump_scan</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: Speakeasy, Qiling, Wine</td>
+          </tr>
+          <tr>
+            <td><code>die</code></td>
+            <td>2</td>
+            <td><code>die.scan</code>, <code>die.identify</code></td>
+            <td><code>DIE_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>dotnet-decompile</code></td>
+            <td>2</td>
+            <td><code>dotnet.decompile</code>, <code>dotnet.decompile.type</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>dotnet-reactor</code></td>
+            <td>4</td>
+            <td><code>reactor.anti_tamper</code>, <code>reactor.string_decrypt</code>, <code>reactor.dynamic_methods</code>, <code>reactor.resource_export</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>dynamic</code></td>
+            <td>24</td>
+            <td><code>dynamic.auto_hook</code>, <code>dynamic.trace_attribute</code>, <code>dynamic.memory_dump</code>, <code>dynamic.behavior.capture</code>, <code>dynamic.behavior.diff</code>, <code>dynamic.dependencies</code>, <code>dynamic.trace.import</code>, <code>dynamic.memory.import</code>, <code>sandbox.execute</code>, <code>runtime.debug.session.start</code>, <code>runtime.debug.session.status</code>, <code>runtime.debug.session.stop</code>, <code>runtime.debug.command</code>, <code>dynamic.runtime.status</code>, <code>dynamic.toolkit.status</code>, <code>dynamic.deep_plan</code>, <code>debug.cdb.plan</code>, <code>debug.procdump.plan</code>, <code>debug.telemetry.plan</code>, <code>debug.network.plan</code>, <code>debug.managed.plan</code>, <code>debug.gui.handoff</code>, <code>dynamic.persona.plan</code>, <code>runtime.hyperv.control</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>FRIDA_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>elf-macho</code></td>
+            <td>4</td>
+            <td><code>elf.structure.analyze</code>, <code>macho.structure.analyze</code>, <code>elf.imports.extract</code>, <code>elf.exports.extract</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>firmware</code></td>
+            <td>3</td>
+            <td><code>firmware.*</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>frida</code></td>
+            <td>4</td>
+            <td><code>frida.runtime.instrument</code>, <code>frida.script.inject</code>, <code>frida.trace.capture</code>, <code>frida.script.generate</code></td>
+            <td>frida CLI</td>
+          </tr>
+          <tr>
+            <td><code>ghidra</code></td>
+            <td>2</td>
+            <td><code>ghidra.analyze</code>, <code>ghidra.health</code></td>
+            <td><code>GHIDRA_INSTALL_DIR</code></td>
+          </tr>
+          <tr>
+            <td><code>go-analysis</code></td>
+            <td>3</td>
+            <td><code>go.symbols.recover</code>, <code>go.types.list</code>, <code>go.binary.analyze</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>graphviz</code></td>
+            <td>1</td>
+            <td><code>graphviz.render</code></td>
+            <td><code>GRAPHVIZ_DOT_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>host-correlation</code></td>
+            <td>1</td>
+            <td><code>host.correlate</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>jvm-decompile</code></td>
+            <td>1</td>
+            <td><code>jvm.decompile</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>JAVA_PATH</code>, <code>CFR_JAR</code></td>
+          </tr>
+          <tr>
+            <td><code>kb-collaboration</code></td>
+            <td>13</td>
+            <td><code>kb.function.match</code>, <code>analysis.template</code>, <code>kb.import.bulk</code>, <code>kb.export</code>, <code>kb.import</code>, <code>kb.stats</code>, <code>analysis.notes</code>, <code>analysis.claims.apply</code>, <code>analysis.case.checkpoint</code>, <code>analysis.case.snapshot</code>, <code>analysis.context.pack</code>, <code>rule.library</code>, <code>kb.context.suggest</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>lib-identify</code></td>
+            <td>2</td>
+            <td><code>lib.identify</code>, <code>lib.signatures.list</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>RIZIN_PATH</code>, <code>RZ_SIGDB</code></td>
+          </tr>
+          <tr>
+            <td><code>malware</code></td>
+            <td>4</td>
+            <td><code>c2.extract</code>, <code>malware.config.extract</code>, <code>malware.classify</code>, <code>sandbox.report</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>CAPA_RULES_PATH</code>, <code>YARA_RULES_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>managed-fake-c2</code></td>
+            <td>1</td>
+            <td><code>managed.fake_c2</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>managed-il-xrefs</code></td>
+            <td>2</td>
+            <td><code>managed.il_xrefs</code>, <code>managed.token_xrefs</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>managed-sandbox</code></td>
+            <td>1</td>
+            <td><code>managed.safe_run</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>memory-forensics</code></td>
+            <td>6</td>
+            <td><code>memory-forensics.pslist</code>, <code>memory-forensics.dlllist</code>, <code>memory-forensics.malfind</code>, <code>memory-forensics.netscan</code>, <code>memory-forensics.hivelist</code>, <code>memory-forensics.cmdline</code></td>
+            <td><code>VOLATILITY3_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>metadata</code></td>
+            <td>1</td>
+            <td><code>metadata.extract</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>observability</code></td>
+            <td>1</td>
+            <td><code>observability.metrics</code></td>
+            <td><span data-lang-en>— (uses global hooks)</span><span data-lang-zh>—（使用全局钩子）</span></td>
+          </tr>
+          <tr>
+            <td><code>office-analysis</code></td>
+            <td>3</td>
+            <td><code>office.vba.extract</code>, <code>office.macro.detect</code>, <code>office.ole.analyze</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>panda</code></td>
+            <td>1</td>
+            <td><code>panda.inspect</code></td>
+            <td><code>PANDA_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>pcap-analysis</code></td>
+            <td>3</td>
+            <td><code>pcap.analyze</code>, <code>pcap.dns.list</code>, <code>pcap.extract.streams</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>pdf-analysis</code></td>
+            <td>1</td>
+            <td><code>pdf.analyze</code></td>
+            <td>python3</td>
+          </tr>
+          <tr>
+            <td><code>pe-analysis</code></td>
+            <td>6</td>
+            <td><code>pe.structure.analyze</code>, <code>pe.imports.extract</code>, <code>pe.exports.extract</code>, <code>pe.fingerprint</code>, <code>pe.pdata.extract</code>, <code>pe.symbols.recover</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>pe-signature</code></td>
+            <td>2</td>
+            <td><code>pe.signature.verify</code>, <code>pe.certificate.extract</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>python-decompile</code></td>
+            <td>1</td>
+            <td><code>python.decompile</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>PYTHON_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>qiling</code></td>
+            <td>1</td>
+            <td><code>qiling.inspect</code></td>
+            <td><code>QILING_PYTHON</code></td>
+          </tr>
+          <tr>
+            <td><code>reporting</code></td>
+            <td>3</td>
+            <td><code>report.summarize</code>, <code>report.generate</code>, <code>workflow.summarize</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>retdec</code></td>
+            <td>1</td>
+            <td><code>retdec.decompile</code></td>
+            <td><code>RETDEC_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>rizin</code></td>
+            <td>1</td>
+            <td><code>rizin.analyze</code></td>
+            <td><code>RIZIN_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>runtime-deobfuscate</code></td>
+            <td>4</td>
+            <td><code>deobf.strings</code>, <code>deobf.api_resolve</code>, <code>deobf.cfg_trace</code>, <code>deobf.dotnet</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: de4dot</td>
+          </tr>
+          <tr>
+            <td><code>rust-binary</code></td>
+            <td>1</td>
+            <td><code>rust.binary.inventory</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>sbom</code></td>
+            <td>1</td>
+            <td><code>sbom.generate</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>serialization-format</code></td>
+            <td>1</td>
+            <td><code>serialization.inventory</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>similarity</code></td>
+            <td>2</td>
+            <td><code>sample.similarity</code>, <code>sample.cluster.fuzzy</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: py-tlsh</td>
+          </tr>
+          <tr>
+            <td><code>speakeasy</code></td>
+            <td>3</td>
+            <td><code>speakeasy.emulate</code>, <code>speakeasy.shellcode</code>, <code>speakeasy.api_trace</code></td>
+            <td>speakeasy-emulator</td>
+          </tr>
+          <tr>
+            <td><code>static-triage</code></td>
+            <td>20</td>
+            <td><code>analysis.context.link</code>, <code>runtime.detect</code>, <code>dotnet.metadata.extract</code>, <code>dotnet.types.list</code>, <code>packer.detect</code>, <code>static.capability.triage</code>, <code>compiler.packer.detect</code>, <code>binary.role.profile</code>, <code>crypto.identify</code>, <code>breakpoint.smart</code>, <code>trace.condition</code>, <code>dll.export.profile</code>, <code>com.role.profile</code>, <code>rust.binary.analyze</code>, <code>entropy.analyze</code>, <code>obfuscation.detect</code>, <code>taint.track</code>, <code>static.resource.graph</code>, <code>static.config.carver</code>, <code>static.behavior.classify</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>strings</code></td>
+            <td>2</td>
+            <td><code>strings.extract</code>, <code>strings.floss.decode</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: <code>FLOSS_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>threat-intel</code></td>
+            <td>3</td>
+            <td><code>attack.map</code>, <code>ioc.export</code>, <code>sigma.rule.generate</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>unpacking</code></td>
+            <td>3</td>
+            <td><code>unpack.auto</code>, <code>unpack.guide</code>, <code>unpack.child.handoff</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>upx</code></td>
+            <td>1</td>
+            <td><code>upx.inspect</code></td>
+            <td><code>UPX_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>visualization</code></td>
+            <td>5</td>
+            <td><code>report.html.generate</code>, <code>behavior.timeline</code>, <code>data_flow.map</code>, <code>analysis.evidence.graph</code>, <code>crypto.lifecycle.graph</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>vm-analysis</code></td>
+            <td>10</td>
+            <td><code>vm.detect</code>, <code>vm.pattern.analyze</code>, <code>vm.opcode.extract</code>, <code>vm.disasm.build</code>, <code>vm.emulate</code>, <code>vm.semantic.diff</code>, <code>constraint.extract</code>, <code>smt.solve</code>, <code>keygen.synthesize</code>, <code>mba.simplify</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>vuln-scanner</code></td>
+            <td>2</td>
+            <td><code>vuln.pattern.scan</code>, <code>vuln.pattern.summary</code></td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>wine</code></td>
+            <td>1</td>
+            <td><code>wine.run</code></td>
+            <td><code>WINE_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>yara</code></td>
+            <td>3</td>
+            <td><code>yara.scan</code>, <code>yara.generate</code>, <code>yara.generate.batch</code></td>
+            <td><span data-lang-en>Optional</span><span data-lang-zh>可选</span>: yara-python</td>
+          </tr>
+          <tr>
+            <td><code>yara-x</code></td>
+            <td>1</td>
+            <td><code>yaraX.scan</code></td>
+            <td><code>YARA_X_PATH</code></td>
+          </tr>
+          <tr>
+            <td><code>zig-binary</code></td>
+            <td>1</td>
+            <td><code>zig.binary.inventory</code></td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Plugin SDK -->
+    <section id="sdk" class="reveal">
+      <h2>Plugin SDK</h2>
+      <p>
+        <span data-lang-en>A plugin is a module that exports a <code>register()</code> function:</span>
+        <span data-lang-zh>插件是一个导出 <code>register()</code> 函数的模块：</span>
+      </p>
+      <div class="code-block">
+        <div class="code-block__header"><span>TypeScript</span><button class="code-block__copy">Copy</button></div>
+        <pre><span class="kw">import</span> { PluginContext } <span class="kw">from</span> <span class="str">'./types'</span>;
+
+<span class="kw">export function</span> <span class="val">register</span>(ctx: PluginContext) {
+  ctx.registerTool({
+    name: <span class="str">'my-plugin.hello'</span>,
+    description: <span class="str">'Say hello'</span>,
+    inputSchema: {
+      type: <span class="str">'object'</span>,
+      properties: {
+        name: { type: <span class="str">'string'</span> }
+      }
+    },
+    <span class="kw">async</span> handler({ name }) {
+      <span class="kw">return</span> { greeting: <span class="str">`Hello, ${name}!`</span> };
+    }
+  });
+}
+
+<span class="kw">export const</span> meta = {
+  name: <span class="str">'my-plugin'</span>,
+  version: <span class="str">'1.0.0'</span>,
+  description: <span class="str">'A custom plugin'</span>
+};</pre>
+      </div>
+
+      <h3><span data-lang-en>Plugin Context API</span><span data-lang-zh>插件上下文 API</span></h3>
+      <table class="doc-table">
+        <thead><tr><th>Method</th><th><span data-lang-en>Description</span><span data-lang-zh>描述</span></th></tr></thead>
+        <tbody>
+          <tr><td><code>registerTool()</code></td><td><span data-lang-en>Register an MCP tool</span><span data-lang-zh>注册 MCP 工具</span></td></tr>
+          <tr><td><code>check()</code></td><td><span data-lang-en>Verify plugin dependencies</span><span data-lang-zh>验证插件依赖</span></td></tr>
+          <tr><td><code>configSchema()</code></td><td><span data-lang-en>Declare configuration schema</span><span data-lang-zh>声明配置模式</span></td></tr>
+          <tr><td><code>dependencies()</code></td><td><span data-lang-en>Declare plugin dependencies</span><span data-lang-zh>声明插件依赖</span></td></tr>
+          <tr><td><code>hooks()</code></td><td><span data-lang-en>Register lifecycle hooks</span><span data-lang-zh>注册生命周期钩子</span></td></tr>
+          <tr><td><code>teardown()</code></td><td><span data-lang-en>Cleanup on shutdown</span><span data-lang-zh>关闭时清理</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Configuration -->
+    <section id="config" class="reveal">
+      <h2><span data-lang-en>Configuration</span><span data-lang-zh>配置</span></h2>
+      <p>
+        <span data-lang-en>Control which plugins are loaded via the <code>PLUGINS</code> environment variable:</span>
+        <span data-lang-zh>通过 <code>PLUGINS</code> 环境变量控制加载哪些插件：</span>
+      </p>
+      <div class="code-block">
+        <div class="code-block__header"><span>Environment Variable</span><button class="code-block__copy">Copy</button></div>
+        <pre><span class="comment"># Load all plugins (default)</span>
+PLUGINS=*
+
+<span class="comment"># Load only specific plugins</span>
+PLUGINS=pe-analysis,ghidra,detection
+
+<span class="comment"># Exclude specific plugins</span>
+PLUGINS=*,-docker-backend</pre>
+      </div>
+    </section>
+
+    <!-- Introspection -->
+    <section id="introspection" class="reveal">
+      <h2><span data-lang-en>Introspection Tools</span><span data-lang-zh>内省工具</span></h2>
+      <p>
+        <span data-lang-en>Use these MCP tools to inspect the plugin system at runtime:</span>
+        <span data-lang-zh>使用以下 MCP 工具在运行时检查插件系统：</span>
+      </p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th><span data-lang-en>Tool</span><span data-lang-zh>工具</span></th>
+            <th><span data-lang-en>Description</span><span data-lang-zh>描述</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>plugin.list</code></td><td><span data-lang-en>List all loaded plugins with status</span><span data-lang-zh>列出所有已加载插件及状态</span></td></tr>
+          <tr><td><code>plugin.enable</code></td><td><span data-lang-en>Enable a disabled plugin</span><span data-lang-zh>启用已禁用的插件</span></td></tr>
+          <tr><td><code>plugin.disable</code></td><td><span data-lang-en>Disable a plugin at runtime</span><span data-lang-zh>运行时禁用插件</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Lifecycle -->
+    <section id="lifecycle" class="reveal">
+      <h2><span data-lang-en>Plugin Lifecycle</span><span data-lang-zh>插件生命周期</span></h2>
+      <ol>
+        <li>
+          <strong><span data-lang-en>Discovery</span><span data-lang-zh>发现</span></strong> —
+          <span data-lang-en>Server scans the <code>src/plugins/</code> directory for modules with <code>register()</code> exports.</span>
+          <span data-lang-zh>服务器扫描 <code>src/plugins/</code> 目录，查找导出 <code>register()</code> 的模块。</span>
+        </li>
+        <li>
+          <strong><span data-lang-en>Check</span><span data-lang-zh>检查</span></strong> —
+          <span data-lang-en>Each plugin's <code>check()</code> verifies dependencies are met (e.g., Ghidra installed).</span>
+          <span data-lang-zh>每个插件的 <code>check()</code> 验证依赖是否满足（如 Ghidra 已安装）。</span>
+        </li>
+        <li>
+          <strong><span data-lang-en>Register</span><span data-lang-zh>注册</span></strong> —
+          <span data-lang-en><code>register()</code> is called, tools are added to the registry.</span>
+          <span data-lang-zh>调用 <code>register()</code>，工具被添加到注册表。</span>
+        </li>
+        <li>
+          <strong><span data-lang-en>Ready</span><span data-lang-zh>就绪</span></strong> —
+          <span data-lang-en>Plugin is active and tools are available to MCP clients.</span>
+          <span data-lang-zh>插件已激活，工具可供 MCP 客户端使用。</span>
+        </li>
+        <li>
+          <strong><span data-lang-en>Teardown</span><span data-lang-zh>清理</span></strong> —
+          <span data-lang-en><code>teardown()</code> is called on server shutdown for cleanup.</span>
+          <span data-lang-zh>服务器关闭时调用 <code>teardown()</code> 进行清理。</span>
+        </li>
+      </ol>
+
+      <h3><span data-lang-en>Lifecycle Hooks</span><span data-lang-zh>生命周期钩子</span></h3>
+      <p><span data-lang-en>Plugins can register hooks to intercept tool execution:</span><span data-lang-zh>插件可以注册钩子拦截工具执行：</span></p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th><span data-lang-en>Hook</span><span data-lang-zh>钩子</span></th>
+            <th><span data-lang-en>When</span><span data-lang-zh>时机</span></th>
+            <th><span data-lang-en>Use Case</span><span data-lang-zh>用例</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>onBeforeToolCall</code></td><td><span data-lang-en>Before tool execution</span><span data-lang-zh>工具执行前</span></td><td><span data-lang-en>Input validation, audit logging, parameter transformation</span><span data-lang-zh>输入验证、审计日志、参数转换</span></td></tr>
+          <tr><td><code>onAfterToolCall</code></td><td><span data-lang-en>After success</span><span data-lang-zh>执行成功后</span></td><td><span data-lang-en>Result enrichment, metrics, caching</span><span data-lang-zh>结果增强、指标收集、缓存</span></td></tr>
+          <tr><td><code>onToolError</code></td><td><span data-lang-en>On failure</span><span data-lang-zh>执行失败时</span></td><td><span data-lang-en>Error reporting, fallback logic, retry</span><span data-lang-zh>错误报告、降级逻辑、重试</span></td></tr>
+        </tbody>
+      </table>
+
+      <h3><span data-lang-en>Three Ways to Write Plugins</span><span data-lang-zh>三种编写插件的方式</span></h3>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th><span data-lang-en>Type</span><span data-lang-zh>类型</span></th>
+            <th><span data-lang-en>Location</span><span data-lang-zh>位置</span></th>
+            <th><span data-lang-en>Description</span><span data-lang-zh>描述</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span data-lang-en>Built-in</span><span data-lang-zh>内建</span></td><td><code>src/plugins/</code></td><td><span data-lang-en>Shipped with the server; auto-discovered</span><span data-lang-zh>随服务器发布；自动发现</span></td></tr>
+          <tr><td><span data-lang-en>External</span><span data-lang-zh>外部</span></td><td><span data-lang-en>Any npm package</span><span data-lang-zh>任意 npm 包</span></td><td><span data-lang-en>Installed separately; configured via <code>PLUGINS</code> env</span><span data-lang-zh>单独安装；通过 <code>PLUGINS</code> 环境变量配置</span></td></tr>
+          <tr><td><span data-lang-en>Runtime</span><span data-lang-zh>运行时</span></td><td><span data-lang-en>Hot-loaded at startup</span><span data-lang-zh>启动时热加载</span></td><td><span data-lang-en>Dynamic load/unload without restart</span><span data-lang-zh>无需重启的动态加载/卸载</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand"><span class="nav__logo-icon" style="width:24px;height:24px;font-size:.65rem;border-radius:6px;">R</span> Rikune</div>
+    <ul class="footer__links">
+      <li><a href="api-reference.html">API</a></li>
+      <li><a href="local-setup.html"><span data-lang-en>Local</span><span data-lang-zh>本地</span></a></li>
+      <li><a href="docker.html">Docker</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="examples.html"><span data-lang-en>Examples</span><span data-lang-zh>示例</span></a></li>
+      <li><a href="plugins.html"><span data-lang-en>Plugins</span><span data-lang-zh>插件</span></a></li>
+      <li><a href="anti-obfuscation.html"><span data-lang-en>Anti-Obf</span><span data-lang-zh>反混淆</span></a></li>
+    </ul>
+    <span class="footer__copy">MIT License · Built for the MCP ecosystem</span>
+  </div>
+</footer>
+
+<script src="assets/main.js"></script>
+</body>
+</html>

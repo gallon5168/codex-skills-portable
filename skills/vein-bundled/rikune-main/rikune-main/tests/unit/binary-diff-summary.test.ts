@@ -1,0 +1,55 @@
+/**
+ * Unit tests for binary.diff.summary tool
+ */
+
+import { describe, test, expect, beforeEach, jest } from '@jest/globals'
+import { createBinaryDiffSummaryHandler, BinaryDiffSummaryInputSchema } from '../../src/plugins/binary-diff/tools/binary-diff-summary.js'
+import type { WorkspaceManager } from '../../src/workspace-manager.js'
+import type { DatabaseManager } from '../../src/database.js'
+
+describe('binary.diff.summary tool', () => {
+  let mockWorkspaceManager: jest.Mocked<WorkspaceManager>
+  let mockDatabase: jest.Mocked<DatabaseManager>
+
+  beforeEach(() => {
+    mockWorkspaceManager = {
+      getWorkspace: jest.fn(),
+    } as unknown as jest.Mocked<WorkspaceManager>
+
+    mockDatabase = {
+      findSample: jest.fn(),
+      findArtifactsByType: jest.fn().mockReturnValue([]),
+      getDb: jest.fn(),
+    } as unknown as jest.Mocked<DatabaseManager>
+  })
+
+  describe('Input validation', () => {
+    test('should accept valid input', () => {
+      const result = BinaryDiffSummaryInputSchema.safeParse({ sample_id_a: 'sha256:abc123', sample_id_b: 'sha256:def456' })
+      expect(result.success).toBe(true)
+    })
+
+    test('should reject empty input', () => {
+      const result = BinaryDiffSummaryInputSchema.safeParse({})
+      expect(result.success).toBe(false)
+    })
+
+    test('should reject invalid types', () => {
+      const result = BinaryDiffSummaryInputSchema.safeParse({ sample_id_a: 123, sample_id_b: 'sha256:def456' })
+      expect(result.success).toBe(false)
+    })
+  })
+
+  describe('Handler', () => {
+    test('should return error for non-existent resource', async () => {
+      const handler = createBinaryDiffSummaryHandler(mockWorkspaceManager, mockDatabase)
+
+      mockDatabase.findSample.mockReturnValue(undefined)
+
+      const result = await handler({ sample_id_a: 'sha256:abc123', sample_id_b: 'sha256:def456' })
+
+      expect(result.ok).toBe(false)
+      expect(result.errors?.[0]).toMatch(/not found|no binary diff|unknown|invalid/i)
+    })
+  })
+})

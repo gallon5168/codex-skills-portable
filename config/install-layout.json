@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "mode": "portable",
+  "installTarget": "${CODEX_HOME}/skills/.portable-export",
+  "aliasRoots": [
+    "${HOME}/.agents/skills",
+    "${CODEX_HOME}/skills"
+  ],
+  "aliasManifest": "manifest/aliases.json",
+  "rollbackState": "${HOME}/.codex-skills-portable-state.json"
+}

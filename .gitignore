@@ -1,0 +1,5 @@
+.codex-skills-portable-state.json
+.codex-skills-portable-backups/
+tests/.tmp/
+__pycache__/
+*.pyc

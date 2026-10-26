@@ -1,0 +1,19 @@
+--- config/install-layout.source.json
++++ config/install-layout.json
+@@ -1,8 +1,11 @@
+ {
+   "schema": 1,
+-  "mode": "source-only",
+-  "installTarget": null,
+-  "aliasRoots": [],
+-  "aliasManifest": null,
+-  "rollbackState": null
++  "mode": "portable",
++  "installTarget": "${CODEX_HOME}/skills/.portable-export",
++  "aliasRoots": [
++    "${HOME}/.agents/skills",
++    "${CODEX_HOME}/skills"
++  ],
++  "aliasManifest": "manifest/aliases.json",
++  "rollbackState": "${HOME}/.codex-skills-portable-state.json"
+ }
